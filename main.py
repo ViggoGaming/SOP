@@ -1,13 +1,15 @@
 import random
 from matplotlib import pyplot as plt
+import streamlit as st
+import io
 import csv
+from PIL import Image
 from typing import List
 
-# Graf farver
+# Farvekoder
 colors = ["#FF0000", "#0000FF", "#00FF00"]
-kMax = 99
-
-figure, axis = plt.subplots(2, 2)
+# Maksimale k-værdi
+kMax = 30
 
 
 class Point:
@@ -37,19 +39,6 @@ def KNN(x: float, y: float, z: float, k: int, funcIndex: int) -> int:
         point, c.x, c.y, c.z))[0:k]
     NN = list((map(lambda c: c.label, NN)))
     return most_common(NN)
-
-
-"""
-def KNN(x: float, y: float, z: float, k: int, funcIndex: int) -> int:
-    def distance(point, data_point):
-        return distFuncs[funcIndex](point, data_point.x, data_point.y, data_point.z)
-
-    point = Point(x, y, z, None)
-    NN = sorted(dataPoints, key=lambda data_point: distance(point, data_point))[0:k]
-    NN = [c.label for c in NN]
-    return most_common(NN)
-"""
-
 
 def most_common(list: List) -> int:
     return max(set(list), key=list.count)
@@ -84,20 +73,33 @@ attackTypes = {
     "Attack": 1
 }
 
-numberOfLines = 0
-for line in open("./datasets/SOP_dataset_mini.csv"):
-    numberOfLines += 1
+
+def calculateNumberOfLines():
+    file = io.StringIO(file_contents)
+    lines = csv.reader(file, delimiter=',')
+    numberOfLines = 0
+    for line in lines:
+        numberOfLines += 1
+    file.close()
+    return numberOfLines
 
 
-with open("./datasets/SOP_dataset_mini.csv") as csv_file:
-    csv_reader = csv.reader(csv_file, delimiter=',')
+def main():
+    figure, axis = plt.subplots(2, 2)
+    numberOflines: int = calculateNumberOfLines()
+
+    file = io.StringIO(file_contents)
+    csv_reader = csv.reader(file, delimiter=',')
     next(csv_reader)
-    csv_reader = [next(csv_reader) for x in range(numberOfLines - 2)]
+    csv_reader = [next(csv_reader) for x in range(numberOflines - 2)]
     random.shuffle(csv_reader)
 
     lineCount = 0
     for row in csv_reader:
-        # Opsætter de
+        # Opsætter de forskellige features
+
+        # 0    1    2        3          4        5        6             7           8
+        # No.,Time,Source,Destination,Protocol,Length,Source port,Destination port,Type
         source = float(row[2].replace(".", ""))
         destination = float(row[3].replace(".", ""))
         protocol = protocols.get(row[4])
@@ -105,8 +107,7 @@ with open("./datasets/SOP_dataset_mini.csv") as csv_file:
         destinationPort = int(row[7])
         attackType = attackTypes.get(row[8])
 
-        # point = Point(source, destination, protocol, attackType)
-        point = Point(destination, source, protocol, attackType)
+        point = Point(protocol, length, destinationPort, attackType)
         # Put 1/3 of data in training data, and 2/3 in test data
         if (lineCount % 3 == 0):
             dataPoints.append(point)
@@ -114,55 +115,69 @@ with open("./datasets/SOP_dataset_mini.csv") as csv_file:
             testPoints.append(point)
         lineCount += 1
 
+    # Plotter alle datapointer
+    for data in dataPoints:
+        axis[1, 1].scatter(data.x, data.y, c=colors[data.label], marker="o")
 
-# Plotter alle datapointer
-for data in dataPoints:
-    axis[1, 1].scatter(data.x, data.y, c=colors[data.label], marker="o")
+    #    if data.label == 1:
+    #        print(data.x, data.y)
 
-#    if data.label == 1:
-#        print(data.x, data.y)
+    for funcIndex in range(len(distFuncs)):
+        a = []
+        pa = None
+        for k in range(1, kMax):
+            print(f"k: {k}")
+            correct = 0
+            for testPoint in testPoints:
+                if KNN(testPoint.x, testPoint.y, testPoint.z, k, funcIndex) == testPoint.label:
+                    # axis[1,1].scatter(testPoint.x, testPoint.y, c=colors[testPoint.label], marker=matplotlib.markers.CARETUPBASE)
+                    correct += 1
+            a.append(correct / len(testPoints))
+
+        print(f"funcindex: {funcIndex}")
+        match funcIndex:
+            case 0:
+                axis[0, 0].plot([k for k in range(1, kMax)], a,
+                                "o-", color=colors[funcIndex])
+                axis[0, 0].set_title("(K, Præcision)-graf for DDOS-angreb")
+                axis[0, 0].legend("Euklid")
+                # axis[0, 0].set_xlabel="K"
+                # axis[0, 0].set_ylabel="Antal korrekte klassificeringer i %"
+                axis[0, 0].set_xticks([x for x in range(1, kMax)])
+            case 1:
+                axis[0, 1].plot([k for k in range(1, kMax)], a,
+                                "o-", color=colors[funcIndex])
+                axis[0, 1].set_title("(K, Præcision)-graf for DDOS-angreb")
+                axis[0, 1].legend("Manhattan")
+                # axis[0, 0].set_xlabel="K"
+                # axis[0, 0].set_ylabel="Antal korrekte klassificeringer i %"
+                axis[0, 1].set_xticks([x for x in range(1, kMax)])
+            case 2:
+                axis[1, 0].plot([k for k in range(1, kMax)], a,
+                                "o-", color=colors[funcIndex])
+                axis[1, 0].set_title("(K, Præcision)-graf for DDOS-angreb")
+                axis[1, 0].legend("Chebyshev")
+                # axis[0, 0].set_xlabel="K"
+                # axis[0, 0].set_ylabel="Antal korrekte klassificeringer i %"
+                axis[1, 0].set_xticks([x for x in range(1, kMax)])
+
+    figure.supxlabel("K")
+    figure.supylabel("Antal korrekte klassificeringer i %")
+
+#    st.pyplot(figure)
+
+    figure = plt.gcf() # get current figure
+    figure.set_size_inches(19, 10)
+    # when saving, specify the DPI
+    plt.savefig("out.png", dpi = 100)
+
+    image = Image.open("out.png")
+    st.image(image) 
 
 
-for funcIndex in range(len(distFuncs)):
-    a = []
-    pa = None
-    for k in range(1, kMax):
-        print(f"k: {k}")
-        correct = 0
-        for testPoint in testPoints:
-            if KNN(testPoint.x, testPoint.y, testPoint.z, k, funcIndex) == testPoint.label:
-                # axis[1,1].scatter(testPoint.x, testPoint.y, c=colors[testPoint.label], marker=matplotlib.markers.CARETUPBASE)
-                correct += 1
-        a.append(correct / len(testPoints))
+inputFile = st.file_uploader("Upload en csv fil", type="csv")
 
-    print(f"funcindex: {funcIndex}")
-    match funcIndex:
-        case 0:
-            axis[0, 0].plot([k for k in range(1, kMax)], a,
-                            "o-", color=colors[funcIndex])
-            axis[0, 0].set_title("(K, Præcision)-graf for DDOS-angreb")
-            axis[0, 0].legend("Euklid")
-            # axis[0, 0].set_xlabel="K"
-            # axis[0, 0].set_ylabel="Antal korrekte klassificeringer i %"
-            axis[0, 0].set_xticks([x for x in range(1, kMax)])
-        case 1:
-            axis[0, 1].plot([k for k in range(1, kMax)], a,
-                            "o-", color=colors[funcIndex])
-            axis[0, 1].set_title("(K, Præcision)-graf for DDOS-angreb")
-            axis[0, 1].legend("Manhattan")
-            # axis[0, 0].set_xlabel="K"
-            # axis[0, 0].set_ylabel="Antal korrekte klassificeringer i %"
-            axis[0, 1].set_xticks([x for x in range(1, kMax)])
-        case 2:
-            axis[1, 0].plot([k for k in range(1, kMax)], a,
-                            "o-", color=colors[funcIndex])
-            axis[1, 0].set_title("(K, Præcision)-graf for DDOS-angreb")
-            axis[1, 0].legend("Chebyshev")
-            # axis[0, 0].set_xlabel="K"
-            # axis[0, 0].set_ylabel="Antal korrekte klassificeringer i %"
-            axis[1, 0].set_xticks([x for x in range(1, kMax)])
-
-figure.supxlabel("K")
-figure.supylabel("Antal korrekte klassificeringer i %")
-
-plt.show()
+if inputFile is not None:
+    global file_contents
+    file_contents = inputFile.read().decode("utf-8")
+    main()
