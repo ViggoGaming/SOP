@@ -70,8 +70,8 @@ protocols = {
 
 # Erstatter attackType kolonen med numeriske værdier i stedet for strings
 attackTypes = {
-    "Clean": 0,
-    "Attack": 1
+    "Benign": 0,
+    "DDoS": 1
 }
 
 
@@ -103,14 +103,14 @@ def main():
         for row in csv_reader:
             # Opsætter de forskellige features
 
-            # 0    1    2        3          4        5        6             7           8
-            # No.,Time,Source,Destination,Protocol,Length,Source port,Destination port,Type
-            source = float(row[2].replace(".", ""))
-            destination = float(row[3].replace(".", ""))
-            protocol = protocols.get(row[4])
-            length = int(row[5])
-            destinationPort = int(row[7])
-            attackType = attackTypes.get(row[8])
+            protocol = int(row[4])
+            print(f"protocol: {protocol}")
+            length = int(row[21])
+            print(f"length: {length}")
+            destinationPort = int(row[3])
+            print(f"destport: {destinationPort}")
+            attackType = attackTypes.get(row[44])
+            print(f"attacktype: {attackType}")
 
             if attackType:
                 attackCount += 1
@@ -127,6 +127,9 @@ def main():
         for data in dataPoints:
             axis[1, 1].scatter(
                 data.x, data.y, c=colors[data.label], marker="o")
+
+        #    if data.label == 1:
+        #        print(data.x, data.y)
 
         for funcIndex in range(len(distFuncs)):
             a = []
@@ -175,9 +178,9 @@ def main():
         figure = plt.gcf()  # get current figure
         figure.set_size_inches(19, 10)
         # when saving, specify the DPI
-        plt.savefig("out.png", dpi=100)
+        plt.savefig("external.png", dpi=100)
 
-        image = Image.open("out.png")
+        image = Image.open("external.png")
         st.image(image)
 
         st.subheader(
