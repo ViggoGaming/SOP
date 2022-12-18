@@ -127,6 +127,7 @@ def main():
         for data in dataPoints:
             axis[1, 1].scatter(
                 data.x, data.y, c=colors[data.label], marker="o")
+            axis[1, 1].legend()
 
         for funcIndex in range(len(distFuncs)):
             a = []
