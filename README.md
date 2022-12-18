@@ -1,4 +1,4 @@
-# SOP
+# SOP Victor 3.M
 Dette repository indeholder alt min kode og anvendte datasæt til mit studieområdeprojekt
 
 # Eget datasæt
