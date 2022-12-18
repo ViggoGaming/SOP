@@ -21,9 +21,10 @@ Nu skal du installere alle de nødvendige Python biblioteker med følgende komma
 
 Nu kan du køre to forskellige Python filer, enten `main.py`, som understøtter mit eget datasæt eller `main_external_dataset.py` som understøtter det eksterne datasæt
 De kan køres med følgende kommandoer:
-*Program til eget datasæt*
+*Kommando til at køre program med eget/hjemmelavet datasæt*
 `python3 -m streamlit run main.py` 
-*Program til eksternt datasæt*
+
+*Kommando til at køre program med eksternt datasæt*
 `python3 -m streamlit run main_external_dataset.py` 
 
 Herefter vil der automatisk åbnes et vindue i din browser hvor du kan uploade henholdsvis `./datasets/SOP_dataset_mini.csv` eller `./datasets/external-dataset_kaggle.csv`
